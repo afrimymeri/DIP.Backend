@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Authorization.Infrastructure;
-
 namespace DIP.Backend.Models;
 
 public class User
@@ -19,12 +17,6 @@ public class User
     public DateTime? LastLoginAt { get; set; }
 
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
-}
-
-public static class Roles
-{
-    public const string User = "User";
-    public const string Admin = "Admin";
 }
 
 /*keywords search edhe kthejn rezultat 
