@@ -11,7 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllers();
 
 // Register DbContext with SQLite using connection string from configuration
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -62,6 +62,8 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddScoped<IPasswordHasher<DIP.Backend.Models.User>, PasswordHasher<DIP.Backend.Models.User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddHttpClient<DIP.Backend.Services.LiteratureScraperService>();
+builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraperService, DIP.Backend.Services.LiteratureScraperService>();
 
 var jwt = builder.Configuration.GetSection("Jwt");
 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["key"]));
@@ -127,8 +129,9 @@ app.UseCors("Frontend");
 
 app.UseAuthorization();
 
-app.MapControllerRoute(
+/*app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}");*/
+app.MapControllers();
 
 app.Run();

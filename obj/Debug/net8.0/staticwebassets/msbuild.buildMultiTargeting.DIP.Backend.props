@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/DIP.Backend.props" />
-</Project>

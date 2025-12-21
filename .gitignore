@@ -1,0 +1,8 @@
+appsettings.json
+appsettings.Development.json
+/obj/
+wwwroot
+CLAUDE.md
+.git
+/bin/
+/.idea/

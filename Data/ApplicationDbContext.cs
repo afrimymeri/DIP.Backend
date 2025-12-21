@@ -9,6 +9,7 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<Literature> Literature { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +29,16 @@ public class ApplicationDbContext : DbContext
                 .WithMany(u => u.RefreshTokens)
                 .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Literature>(b =>
+        {
+            b.HasKey(l => l.Id);
+            b.Property(l => l.Title).IsRequired();
+            b.Property(l => l.Source).IsRequired();
+            b.Property(l => l.ExternalId).HasMaxLength(256);
+            b.HasIndex(l => l.Doi).IsUnique();
+            b.HasIndex(l => new { l.Source, l.ExternalId }).IsUnique();
         });
     }
 }
