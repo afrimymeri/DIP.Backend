@@ -267,7 +267,7 @@ public class AuthController : ControllerBase
         }
         if (user.EmailConfirmationToken != req.Token || user.EmailConfirmationTokenExpiresAt < DateTime.UtcNow)
         {
-            return BadRequest(new { message = "Inavlid or expired token" });
+            return BadRequest(new { message = "Invalid or expired token" });
         }
 
         user.EmailConfirmed = true;

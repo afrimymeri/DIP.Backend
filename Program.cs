@@ -113,7 +113,6 @@ else
     app.UseHsts();
 }
 
-// Apply EF Core migrations on startup so no local user should have a need to migrate anything
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -127,6 +126,7 @@ app.UseRouting();
 
 app.UseCors("Frontend");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 /*app.MapControllerRoute(
