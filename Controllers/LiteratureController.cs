@@ -82,4 +82,28 @@ public class LiteratureController : ControllerBase
         await _db.SaveChangesAsync(ct);
         return Ok(saved);
     }
+
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<ActionResult<IEnumerable<Literature>>> GetAll(
+        [FromQuery] string? query,
+        [FromQuery] int limit = 20,
+        CancellationToken ct = default)
+    {
+        var q = _db.Literature.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            var searchTerm = query.ToLower();
+            q = q.Where(l => l.Title.ToLower().Contains(searchTerm) ||
+                            (l.Authors != null && l.Authors.ToLower().Contains(searchTerm)));
+        }
+
+        var results = await q.OrderByDescending(l => l.CreatedAt)
+                             .Take(Math.Clamp(limit, 1, 100))
+                             .ToListAsync(ct);
+
+        return Ok(results);
+    }
+    
 }

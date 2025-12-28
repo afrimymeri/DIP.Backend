@@ -6,3 +6,5 @@ CLAUDE.md
 .git
 /bin/
 /.idea/
+identifier.sqlite-shm
+identifier.sqlite-wal
