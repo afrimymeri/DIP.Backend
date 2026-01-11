@@ -9,3 +9,4 @@ CLAUDE.md
 /.idea/
 identifier.sqlite-shm
 identifier.sqlite-wal
+identifier.sqlite

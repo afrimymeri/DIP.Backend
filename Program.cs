@@ -67,6 +67,9 @@ builder.Services.AddScoped<IPasswordHasher<DIP.Backend.Models.User>, PasswordHas
 builder.Services.AddScoped<ITokenService, TokenService>();
 
 
+builder.Services.AddHttpClient<DIP.Backend.Services.Scrapers.SemanticScholarScraper>();
+builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraper, DIP.Backend.Services.Scrapers.SemanticScholarScraper>();
+
 builder.Services.AddHttpClient<DIP.Backend.Services.Scrapers.IEEEXploreScraper>();
 builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraper, DIP.Backend.Services.Scrapers.IEEEXploreScraper>();
 
