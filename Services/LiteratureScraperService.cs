@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Xml.Linq;
 using DIP.Backend.Interfaces;
 using DIP.Backend.Models;
+using DIP.Backend.Services.Scrapers;
 using Microsoft.Extensions.Logging;
 
 namespace DIP.Backend.Services;
@@ -11,15 +12,24 @@ public class LiteratureScraperService : ILiteratureScraperService
 {
     private readonly HttpClient _http;
     private readonly ILogger<LiteratureScraperService> _logger;
-    
-    public LiteratureScraperService(HttpClient http, ILogger<LiteratureScraperService> logger)
+    private readonly Dictionary<LiteratureSource, ILiteratureScraper> _scrapers;
+
+    public LiteratureScraperService(
+        HttpClient http,
+        ILogger<LiteratureScraperService> logger,
+        IEnumerable<ILiteratureScraper> scrapers)
     {
         _http = http;
         _logger = logger;
-        
+        _scrapers = scrapers.ToDictionary(s => s.Source);
+
         _http.Timeout = TimeSpan.FromSeconds(30);
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("DIP-LiteratureSearch/1.0 (Academic Research Tool; mailto:contact@example.com)");
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        // Log available scrapers
+        var available = _scrapers.Values.Where(s => s.IsAvailable).Select(s => s.Source);
+        _logger.LogInformation("Available literature scrapers: {Scrapers}", string.Join(", ", available));
     }
 
     public async Task<IReadOnlyList<Literature>> SearchAsync(
@@ -61,6 +71,21 @@ public class LiteratureScraperService : ILiteratureScraperService
         int limit,
         CancellationToken ct)
     {
+        // Delegate to individual scraper if available
+        if (_scrapers.TryGetValue(source, out var scraper) && scraper.IsAvailable)
+        {
+            try
+            {
+                return await scraper.SearchAsync(query, limit, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to search {Source} for query '{Query}'", source, query);
+                return Array.Empty<Literature>();
+            }
+        }
+
+        // Fallback to built-in implementations for sources not yet migrated
         try
         {
             return source switch
@@ -416,13 +441,5 @@ public class LiteratureScraperService : ILiteratureScraperService
 
         _logger.LogInformation("arXiv returned {Count} results for '{Query}'", list.Count, query);
         return list;
-    }
-}
-
-file static class JsonExtensions
-{
-    public static JsonElement? GetPropertyOrDefault(this JsonElement element, string propertyName)
-    {
-        return element.TryGetProperty(propertyName, out var value) ? value : null;
     }
 }

@@ -10,6 +10,8 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
+
 // Add services to the container.
 builder.Services.AddControllers();
 
@@ -60,8 +62,14 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<LiteratureApiKeysOptions>(builder.Configuration.GetSection(LiteratureApiKeysOptions.SectionName));
 builder.Services.AddScoped<IPasswordHasher<DIP.Backend.Models.User>, PasswordHasher<DIP.Backend.Models.User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+
+
+builder.Services.AddHttpClient<DIP.Backend.Services.Scrapers.IEEEXploreScraper>();
+builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraper, DIP.Backend.Services.Scrapers.IEEEXploreScraper>();
+
 builder.Services.AddHttpClient<DIP.Backend.Services.LiteratureScraperService>();
 builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraperService, DIP.Backend.Services.LiteratureScraperService>();
 
