@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DIP.Backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251227161950_AddLiterature")]
-    partial class AddLiterature
+    [Migration("20260111181014_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

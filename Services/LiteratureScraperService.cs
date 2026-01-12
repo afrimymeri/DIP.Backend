@@ -90,7 +90,6 @@ public class LiteratureScraperService : ILiteratureScraperService
         {
             return source switch
             {
-                LiteratureSource.SemanticScholar => await SearchSemanticScholarAsync(query, limit, ct),
                 LiteratureSource.DBLP => await SearchDblpAsync(query, limit, ct),
                 LiteratureSource.OpenAlex => await SearchOpenAlexAsync(query, limit, ct),
                 LiteratureSource.CrossRef => await SearchCrossRefAsync(query, limit, ct),
@@ -107,59 +106,7 @@ public class LiteratureScraperService : ILiteratureScraperService
 
     private static string NormalizeTitle(string title) =>
         title.ToLowerInvariant().Trim();
-
-    private async Task<IReadOnlyList<Literature>> SearchSemanticScholarAsync(string query, int limit, CancellationToken ct)
-    {
-        var url = $"https://api.semanticscholar.org/graph/v1/paper/search?query={Uri.EscapeDataString(query)}&limit={Math.Min(limit, 100)}&fields=title,abstract,year,externalIds,authors,url,openAccessPdf";
-
-        using var res = await _http.GetAsync(url, ct);
-        res.EnsureSuccessStatusCode();
-
-        await using var stream = await res.Content.ReadAsStreamAsync(ct);
-        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
-
-        if (!doc.RootElement.TryGetProperty("data", out var data))
-            return Array.Empty<Literature>();
-
-        var list = new List<Literature>();
-        foreach (var item in data.EnumerateArray())
-        {
-            var lit = new Literature
-            {
-                Title = item.GetPropertyOrDefault("title")?.GetString() ?? string.Empty,
-                Abstract = item.GetPropertyOrDefault("abstract")?.GetString(),
-                Year = item.GetPropertyOrDefault("year")?.GetRawText(),
-                Url = item.GetPropertyOrDefault("url")?.GetString(),
-                Source = LiteratureSource.SemanticScholar
-            };
-
-            if (item.TryGetProperty("authors", out var authorsEl))
-            {
-                var authors = authorsEl.EnumerateArray()
-                    .Select(a => a.GetPropertyOrDefault("name")?.GetString())
-                    .Where(s => !string.IsNullOrWhiteSpace(s));
-                lit.Authors = string.Join(", ", authors!);
-            }
-
-            if (item.TryGetProperty("openAccessPdf", out var pdfEl) && pdfEl.ValueKind == JsonValueKind.Object)
-            {
-                lit.PdfUrl = pdfEl.GetPropertyOrDefault("url")?.GetString();
-            }
-
-            if (item.TryGetProperty("externalIds", out var extEl) && extEl.ValueKind == JsonValueKind.Object)
-            {
-                lit.Doi = extEl.GetPropertyOrDefault("DOI")?.GetString();
-                lit.ExternalId = item.GetPropertyOrDefault("paperId")?.GetString()
-                    ?? extEl.GetPropertyOrDefault("CorpusId")?.GetRawText();
-            }
-
-            list.Add(lit);
-        }
-
-        _logger.LogInformation("SemanticScholar returned {Count} results for '{Query}'", list.Count, query);
-        return list;
-    }
-
+    [Obsolete("This currently doesnt work as DBLP is currently down")]
     private async Task<IReadOnlyList<Literature>> SearchDblpAsync(string query, int limit, CancellationToken ct)
     {
         var url = $"https://dblp.org/search/publ/api?q={Uri.EscapeDataString(query)}&h={Math.Min(limit, 100)}&format=json";
