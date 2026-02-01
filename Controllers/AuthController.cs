@@ -333,4 +333,35 @@ public class AuthController : ControllerBase
         await _db.SaveChangesAsync();
         return NoContent();
     }
+    
+    [HttpPost("resend-confirmation")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResendConfirmationEmail(ForgotPasswordRequest request)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+        if (user == null || user.EmailConfirmed)
+        {
+            return NoContent();
+        }
+
+        user.EmailConfirmationToken = Guid.NewGuid().ToString("N");
+        user.EmailConfirmationTokenExpiresAt = DateTime.UtcNow.AddDays(2);
+        await _db.SaveChangesAsync();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _email.SendConfirmationEmailAsync(user.Email, user.Name, user.EmailConfirmationToken!);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "failed sending email to {Email}", user.Email);
+            }
+        });
+        return NoContent();
+    }
+    
 }
