@@ -63,8 +63,10 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 builder.Services.Configure<LiteratureApiKeysOptions>(builder.Configuration.GetSection(LiteratureApiKeysOptions.SectionName));
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection(SmtpSettings.SectionName));
 builder.Services.AddScoped<IPasswordHasher<DIP.Backend.Models.User>, PasswordHasher<DIP.Backend.Models.User>>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<DIP.Backend.Interfaces.IEmailService, SmtpEmailService>();
 
 
 builder.Services.AddHttpClient<DIP.Backend.Services.Scrapers.SemanticScholarScraper>();

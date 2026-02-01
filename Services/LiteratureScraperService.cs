@@ -26,8 +26,7 @@ public class LiteratureScraperService : ILiteratureScraperService
         _http.Timeout = TimeSpan.FromSeconds(30);
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("DIP-LiteratureSearch/1.0 (Academic Research Tool; mailto:contact@example.com)");
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        // Log available scrapers
+        
         var available = _scrapers.Values.Where(s => s.IsAvailable).Select(s => s.Source);
         _logger.LogInformation("Available literature scrapers: {Scrapers}", string.Join(", ", available));
     }
@@ -175,14 +174,12 @@ public class LiteratureScraperService : ILiteratureScraperService
                 Source = LiteratureSource.OpenAlex,
                 ExternalId = item.GetPropertyOrDefault("id")?.GetString()?.Replace("https://openalex.org/", "")
             };
-
-            // DOI
+            
             if (item.TryGetProperty("doi", out var doiEl) && doiEl.ValueKind == JsonValueKind.String)
             {
                 lit.Doi = doiEl.GetString()?.Replace("https://doi.org/", "");
             }
-
-            // Year
+            
             if (item.TryGetProperty("publication_year", out var yearEl))
             {
                 lit.Year = yearEl.GetRawText();
@@ -194,8 +191,7 @@ public class LiteratureScraperService : ILiteratureScraperService
             {
                 lit.Abstract = ReconstructAbstract(abstractEl);
             }
-
-            // Authors
+            
             if (item.TryGetProperty("authorships", out var authorships))
             {
                 var authors = authorships.EnumerateArray()
@@ -203,8 +199,7 @@ public class LiteratureScraperService : ILiteratureScraperService
                     .Where(s => !string.IsNullOrWhiteSpace(s));
                 lit.Authors = string.Join(", ", authors!);
             }
-
-            // URL - prefer open access, fallback to DOI link
+            
             if (item.TryGetProperty("open_access", out var oaEl))
             {
                 lit.PdfUrl = oaEl.GetPropertyOrDefault("oa_url")?.GetString();
@@ -272,18 +267,17 @@ public class LiteratureScraperService : ILiteratureScraperService
             };
 
             lit.ExternalId = lit.Doi;
-
-            // Title is an array
+            
             if (item.TryGetProperty("title", out var titleArr) && titleArr.ValueKind == JsonValueKind.Array)
             {
                 var titles = titleArr.EnumerateArray().Select(t => t.GetString()).Where(t => !string.IsNullOrEmpty(t));
                 lit.Title = string.Join(" ", titles!);
             }
 
-            // Abstract
+            
             lit.Abstract = item.GetPropertyOrDefault("abstract")?.GetString();
 
-            // Year from published print or published online
+            
             if (item.TryGetProperty("published-print", out var pubPrint) &&
                 pubPrint.TryGetProperty("date-parts", out var dateParts))
             {
@@ -299,7 +293,7 @@ public class LiteratureScraperService : ILiteratureScraperService
                     lit.Year = year.GetInt32().ToString();
             }
 
-            // Authors
+            
             if (item.TryGetProperty("author", out var authors))
             {
                 var authorNames = authors.EnumerateArray()
@@ -313,7 +307,7 @@ public class LiteratureScraperService : ILiteratureScraperService
                 lit.Authors = string.Join(", ", authorNames);
             }
 
-            // PDF link
+            
             if (item.TryGetProperty("link", out var links))
             {
                 var pdfLink = links.EnumerateArray()
@@ -378,8 +372,7 @@ public class LiteratureScraperService : ILiteratureScraperService
             var pdfLink = entry.Elements(atom + "link")
                 .FirstOrDefault(l => l.Attribute("title")?.Value == "pdf");
             lit.PdfUrl = pdfLink?.Attribute("href")?.Value;
-
-            // DOI (if present in arxiv namespace)
+            
             lit.Doi = entry.Element(arxiv + "doi")?.Value;
 
             if (!string.IsNullOrWhiteSpace(lit.Title))

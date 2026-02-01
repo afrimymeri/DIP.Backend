@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using DIP.Backend.Data;
+using DIP.Backend.Helpers;
+using DIP.Backend.Interfaces;
 using DIP.Backend.Models;
 using DIP.Backend.Models.Auth;
 using DIP.Backend.Services;
@@ -17,12 +19,21 @@ public class AuthController : ControllerBase
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher<User> _hasher;
     private readonly ITokenService _tokens;
-    
-    public AuthController(ApplicationDbContext db, IPasswordHasher<User> hasher, ITokenService tokens)
+    private readonly IEmailService _email;
+    private readonly ILogger<AuthController> _logger;
+
+    public AuthController(
+        ApplicationDbContext db,
+        IPasswordHasher<User> hasher,
+        ITokenService tokens,
+        IEmailService email,
+        ILogger<AuthController> logger)
     {
         _db = db;
         _hasher = hasher;
         _tokens = tokens;
+        _email = email;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -36,10 +47,17 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Name, Email and Password are required" });
         }
 
+        // Validate password strength
+        var (isValid, errors) = PasswordValidator.Validate(req.Password);
+        if (!isValid)
+        {
+            return BadRequest(new { message = "Password does not meet requirements", errors });
+        }
+
         var exists = await _db.Users.AnyAsync(u => u.Email == req.Email);
         if (exists)
         {
-            return Conflict(new { message =  "Email already exists" });
+            return Conflict(new { message = "Email already exists" });
         }
 
         var user = new User
@@ -55,8 +73,19 @@ public class AuthController : ControllerBase
 
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
-        
-        // TODO: Send confirmation email with user.EmailConfirmationToken
+
+        // Send confirmation email (fire and forget, don't block registration)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _email.SendConfirmationEmailAsync(user.Email, user.Name, user.EmailConfirmationToken!);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send confirmation email to {Email}", user.Email);
+            }
+        });
 
         var (access, accessExp) = _tokens.CreateAccessToken(user);
         var (refresh, refreshExp) = _tokens.CreateRefreshToken(HttpContext.Connection.RemoteIpAddress?.ToString());
@@ -200,6 +229,13 @@ public class AuthController : ControllerBase
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] string newPassword)
     {
+        // Validate password strength
+        var (isValid, errors) = PasswordValidator.Validate(newPassword);
+        if (!isValid)
+        {
+            return BadRequest(new { message = "Password does not meet requirements", errors });
+        }
+
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0");
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null)
@@ -221,12 +257,26 @@ public class AuthController : ControllerBase
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null)
         {
+            // Don't reveal if email exists or not
             return NoContent();
         }
 
         user.EmailConfirmationToken = Guid.NewGuid().ToString("N");
         user.EmailConfirmationTokenExpiresAt = DateTime.UtcNow.AddHours(2);
         await _db.SaveChangesAsync();
+
+        // Send password reset email (fire and forget)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _email.SendPasswordResetEmailAsync(user.Email, user.Name, user.EmailConfirmationToken!);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send password reset email to {Email}", user.Email);
+            }
+        });
 
         return NoContent();
     }
@@ -235,6 +285,13 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ResetPassword(ResetPasswordRequest req)
     {
+        // Validate password strength
+        var (isValid, errors) = PasswordValidator.Validate(req.NewPassword);
+        if (!isValid)
+        {
+            return BadRequest(new { message = "Password does not meet requirements", errors });
+        }
+
         var email = req.Email.Trim().ToLowerInvariant();
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null)
