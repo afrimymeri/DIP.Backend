@@ -75,6 +75,14 @@ builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraper, DIP.Backen
 builder.Services.AddHttpClient<DIP.Backend.Services.Scrapers.IEEEXploreScraper>();
 builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraper, DIP.Backend.Services.Scrapers.IEEEXploreScraper>();
 
+builder.Services.AddHttpClient<DIP.Backend.Services.Scrapers.ACMDigitalLibraryScraper>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        UseCookies = true,
+        AllowAutoRedirect = true
+    });
+builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraper, DIP.Backend.Services.Scrapers.ACMDigitalLibraryScraper>();
+
 builder.Services.AddHttpClient<DIP.Backend.Services.LiteratureScraperService>();
 builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraperService, DIP.Backend.Services.LiteratureScraperService>();
 
