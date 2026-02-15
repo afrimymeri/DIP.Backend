@@ -83,6 +83,15 @@ builder.Services.AddHttpClient<DIP.Backend.Services.Scrapers.ACMDigitalLibrarySc
     });
 builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraper, DIP.Backend.Services.Scrapers.ACMDigitalLibraryScraper>();
 
+builder.Services.AddHttpClient<DIP.Backend.Services.Scrapers.OpenAlexScraper>();
+builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraper, DIP.Backend.Services.Scrapers.OpenAlexScraper>();
+
+builder.Services.AddHttpClient<DIP.Backend.Services.Scrapers.CrossRefScraper>();
+builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraper, DIP.Backend.Services.Scrapers.CrossRefScraper>();
+
+builder.Services.AddHttpClient<DIP.Backend.Services.Scrapers.ArXivScraper>();
+builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraper, DIP.Backend.Services.Scrapers.ArXivScraper>();
+
 builder.Services.AddHttpClient<DIP.Backend.Services.LiteratureScraperService>();
 builder.Services.AddScoped<DIP.Backend.Interfaces.ILiteratureScraperService, DIP.Backend.Services.LiteratureScraperService>();
 
