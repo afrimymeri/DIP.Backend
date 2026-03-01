@@ -10,6 +10,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public DbSet<Literature> Literature { get; set; } = null!;
+    public DbSet<SearchHistory> SearchHistories { get; set; } = null!;
+    public DbSet<SearchHistoryLiterature> SearchHistoryLiteratures { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,6 +41,30 @@ public class ApplicationDbContext : DbContext
             b.Property(l => l.ExternalId).HasMaxLength(256);
             b.HasIndex(l => l.Doi).IsUnique();
             b.HasIndex(l => new { l.Source, l.ExternalId }).IsUnique();
+        });
+
+        modelBuilder.Entity<SearchHistory>(b =>
+        {
+            b.HasKey(sh => sh.Id);
+            b.Property(sh => sh.Query).IsRequired().HasMaxLength(500);
+            b.HasOne(sh => sh.User)
+                .WithMany()
+                .HasForeignKey(sh => sh.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasIndex(sh => new { sh.UserId, sh.SearchedAt });
+        });
+
+        modelBuilder.Entity<SearchHistoryLiterature>(b =>
+        {
+            b.HasKey(shl => new { shl.SearchHistoryId, shl.LiteratureId });
+            b.HasOne(shl => shl.SearchHistory)
+                .WithMany(sh => sh.SearchHistoryLiteratures)
+                .HasForeignKey(shl => shl.SearchHistoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasOne(shl => shl.Literature)
+                .WithMany()
+                .HasForeignKey(shl => shl.LiteratureId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -4,8 +4,8 @@ namespace DIP.Backend.Helpers;
 
 public static partial class PasswordValidator
 {
-    public const int MinLength = 8;
-    public const int MaxLength = 128;
+    private const int MinLength = 8;
+    private const int MaxLength = 128;
 
     public static (bool IsValid, List<string> Errors) Validate(string password)
     {

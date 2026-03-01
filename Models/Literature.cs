@@ -15,10 +15,10 @@ public class Literature
     public string? PdfUrl { get; set; }
     public string? Year { get; set; }
 
-    public string? Authors { get; set; } // comma-separated for simplicity
+    public string? Authors { get; set; } 
 
     public LiteratureSource Source { get; set; }
-    public string? ExternalId { get; set; } // source-specific identifier
+    public string? ExternalId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
